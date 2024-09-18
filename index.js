@@ -8,6 +8,8 @@ let presetInput
 let imageInput
 /** @type {HTMLButtonElement} */
 let processButton
+/** @type {HTMLInputElement} */
+let autoProcessCheckbox
 /** @type {HTMLCanvasElement} */
 let canvasInput
 
@@ -135,11 +137,13 @@ function removePostQuantizeFilter(filter) {
 }
 
 let fullUpdate = true
+let quantizeUpdate = false
+let previousQuants = []
 function process() {
     let previousCanvas = canvasInput
     let updated = fullUpdate
     fullUpdate = false
-    for (i = 0; i < preQuantizeStages.length; i++) {
+    for (let i = 0; i < preQuantizeStages.length; i++) {
         let stage = preQuantizeStages[i]
         let thisCanvas = document.createElement("canvas")
         updated = updated || stage.updated
@@ -149,19 +153,26 @@ function process() {
         }
         previousCanvas = stage.outputCanvas
     }
-    let previousCtx = previousCanvas.getContext("2d")
-    let imageData = previousCtx.getImageData(0, 0, previousCanvas.width, previousCanvas.height)
-    let previousQuant = new QuantizedImage()
-    previousQuant.process(imageData, nColorsInput.value, ditherModeInput.value)
-    quantizeCanvas.width = previousCanvas.width
-    quantizeCanvas.height = previousCanvas.height
-    let quantizeCtx = quantizeCanvas.getContext("2d")
-    quantizeCtx.putImageData(previousQuant.render(), 0, 0)
-    for (i = 0; i < postQuantizeStages.length; i++) {
+    updated = updated || quantizeUpdate
+    quantizeUpdate = false
+    if (updated) {
+        let previousCtx = previousCanvas.getContext("2d")
+        let imageData = previousCtx.getImageData(0, 0, previousCanvas.width, previousCanvas.height)
+        let previousQuant = new QuantizedImage()
+        previousQuant.process(imageData, nColorsInput.value, ditherModeInput.value)
+        quantizeCanvas.width = previousCanvas.width
+        quantizeCanvas.height = previousCanvas.height
+        let quantizeCtx = quantizeCanvas.getContext("2d")
+        quantizeCtx.putImageData(previousQuant.render(), 0, 0)
+        previousQuants[0] = previousQuant
+    }
+    for (let i = 0; i < postQuantizeStages.length; i++) {
         let stage = postQuantizeStages[i]
-        let thisQuant = previousQuant.copy()
-        stage.process(thisQuant)
-        previousQuant = thisQuant
+        updated = updated || stage.updated
+        if (updated) {
+            let thisQuant = previousQuants[i].copy()
+            previousQuants[i+1] = stage.process(thisQuant)
+        }
     }
 }
 
@@ -171,6 +182,7 @@ function loadPageElements() {
     presetInput = document.getElementById("presets")
     imageInput = document.getElementById("imageInput")
     canvasInput = document.getElementById("imageInputCanvas")
+    autoProcessCheckbox = document.getElementById("autoProcessCheckbox")
     processButton = document.getElementById("processButton")
 
     fileInput.addEventListener("change", (event) => {
@@ -210,8 +222,14 @@ function loadPageElements() {
     ditherModeInput = document.getElementById("ditherMode")
     quantizeCanvas = document.getElementById("quantizeCanvas")
 
-    nColorsInput.addEventListener("change", onSettingChange)
-    ditherModeInput.addEventListener("change", onSettingChange)
+    nColorsInput.addEventListener("change", () => {
+        quantizeUpdate = true
+        onSettingChange()
+    })
+    ditherModeInput.addEventListener("change", () => {
+        quantizeUpdate = true
+        onSettingChange()
+    })
 
     // Post-quantize Stage
     postQuantizeStageList = document.getElementById("postQuantizeStageList")
@@ -230,7 +248,9 @@ function loadPageElements() {
 }
 
 function onSettingChange() {
-    process()
+    if (autoProcessCheckbox.checked) {
+        process()
+    }
 }
 
 window.addEventListener("load", function() {

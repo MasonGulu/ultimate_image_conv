@@ -53,14 +53,15 @@ function forEachChunk(q, x0, y0, w, h, func) {
 function chunkHistogram(q, x0, y0, w, h) {
     let hist = []
     forEachChunk(q, x0, y0, w, h, (i) => {
-        hist[q.data[i]] = (hist[q.data[i]] || 0) + 1
+        let color = q.data[i]
+        hist[color] = (hist[color] || 0) + 1
     })
     return hist
 }
 
 function sortHistogram(a) {
     let list = []
-    for (i in a) {
+    for (let i in a) {
         list.push({count:a[i],index:i})
     }
     list.sort((a, b) => {
@@ -71,15 +72,15 @@ function sortHistogram(a) {
 
 function calculateClosestColors(palette, sh, limit) {
     let lookup = []
-    for (let fromIndex = 0; fromIndex < sh.length; fromIndex++) {
-        let closest = 1000000
-        let from = palette[sh[fromIndex].index]
+    for (let fromIndex = 0; fromIndex < palette.length; fromIndex++) {
+        let closest = 1000000000
+        let from = palette[fromIndex]
         for (let toIndex = 0; toIndex < Math.min(sh.length, limit); toIndex++) {
             let to = palette[sh[toIndex].index]
-            let dist = Math.sqrt((from[0] + to[0])^2 + (from[1] + to[1])^2 + (from[2] + to[2])^2)
+            let dist = Math.sqrt((from[0] - to[0])**2 + (from[1] - to[1])**2 + (from[2] - to[2])**2)
             if (dist < closest) {
                 closest = dist
-                lookup[sh[fromIndex].index] = sh[toIndex].index
+                lookup[fromIndex] = sh[toIndex].index
             }
         }
     }
@@ -106,6 +107,7 @@ class ChunkFilter extends PostQuantizeFilter {
         this.div.appendChild(widthLabel)
         this.div.appendChild(input)
         input.addEventListener("change", (event) => {
+            this.updated = true
             onSettingChange()
         })
         return input
@@ -139,10 +141,23 @@ class ChunkFilter extends PostQuantizeFilter {
         }
         let ctx = this.outputCanvas.getContext("2d")
         ctx.putImageData(quant.render(), 0, 0)
+        return quant
+    }
+}
 
+class BlankFilter extends PostQuantizeFilter {
+    constructor() {
+        super("Blank")
+    }
+    process(quant) {
+        super.process(quant)
+        let ctx = this.outputCanvas.getContext("2d")
+        ctx.putImageData(quant.render(), 0, 0)
+        return quant
     }
 }
 
 function registerPostFilters() {
     registerPostQuantizeFilter("Chunk", ChunkFilter)
+    registerPostQuantizeFilter("Blank", BlankFilter)
 }
