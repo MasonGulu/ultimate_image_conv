@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+
+<head>
+    <link rel="stylesheet" href="index.css">
+    <script type="text/javascript" src="rgbQuant.js"></script>
+    <script type="text/javascript" src="quantShim.js"></script>
+    <script type="text/javascript" src="preQuantizeFilters.js"></script>
+    <script type="text/javascript" src="postQuantizeFilters.js"></script>
+    <script type="text/javascript" src="index.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div id="inputStage" class="element">
+            <h3>Input</h3>
+            <input id="fileInput" type="file">
+            <label for="presets">Preset</label>
+            <select id="presets">
+                <option>None</option>
+                <optgroup label="CGA">
+                    <option>1bpp</option>
+                </optgroup>
+                <optgroup label="CC">
+                    <option>BIMG</option>
+                    <option>BBF</option>
+                </optgroup>
+            </select>
+            <button id="processButton">Process</button>
+            <br>
+            <img id="imageInput"/>
+            <canvas id="imageInputCanvas"></canvas>
+        </div>
+        <div id="preQuantizeStage" class="element">
+            <h3>Pre-Quantize</h3>
+            <div id="preQuantizeStageList">
+            </div>
+            <select id="preQuantizeStageSelect"></select>
+        </div>
+        <div id="quantizeStage" class="element">
+            <h3>Quantizer</h3>
+            <label for="nColors">#Colors</label>
+            <input id="nColors" type="number" value="16" min="2" max="256">
+            <label for="ditherMode">Dither</label>
+            <select id="ditherMode">
+                <option>None</option>
+                <option>FloydSteinberg</option>
+            </select>
+            <br>
+            <canvas id="quantizeCanvas"></canvas>
+        </div>
+        <div id="postQuantizeStage" class="element">
+            <h3>Post-Quantize</h3>
+            <div id="postQuantizeStageList">
+            </div>
+            <select id="postQuantizeStageSelect"></select>
+        </div>
+        <div id="outputStage" class="element">
+            <h3>Output</h3>
+            <button id="saveOutputButton">Save</button>
+        </div>
+        <div id="previewStage" class="element">
+            <h3>Preview</h3>
+            <button id="savePreviewButton">Save</button>
+        </div>
+    </div>
+</body>
