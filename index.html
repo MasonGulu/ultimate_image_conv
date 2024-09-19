@@ -25,8 +25,17 @@
                 </optgroup>
             </select>
             <button id="processButton">Process</button>
-            <label for="autoProcessCheckbox">Auto Process</label>
-            <input type="checkbox" id="autoProcessCheckbox">
+            <label><input type="checkbox" id="autoProcessCheckbox">Auto Process</label>
+            <br><br>
+            <div class="element">
+                <select id="imageScaleMode">
+                    <option>Scale To Fit</option>
+                    <option>Stretch</option>
+                    <option>None</option>
+                </select>
+                <input type="number" min="1" value="640" id="imageWidthInput">
+                <input type="number" min="1" value="480" id="imageHeightInput">
+            </div>
             <br>
             <img id="imageInput" hidden="true"/>
             <canvas id="imageInputCanvas"></canvas>

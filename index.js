@@ -2,7 +2,7 @@
 // Input Stage
 /** @type {HTMLInputElement} */
 let fileInput
-/** @type {HTMLOptionElement} */
+/** @type {HTMLSelectElement} */
 let presetInput
 /** @type {HTMLImageElement} */
 let imageInput
@@ -12,11 +12,17 @@ let processButton
 let autoProcessCheckbox
 /** @type {HTMLCanvasElement} */
 let canvasInput
+/** @type {HTMLSelectElement} */
+let imageScaleMode
+/** @type {HTMLInputElement} */
+let imageWidthInput
+/** @type {HTMLInputElement} */
+let imageHeightInput
 
 // Pre-quantize Stage
 /** @type {HTMLDivElement} */
 let preQuantizeStageList
-/** @type {HTMLOptionElement} */
+/** @type {HTMLSelectElement} */
 let preQuantizeStageSelect
 
 // Quantize Stage
@@ -30,7 +36,7 @@ let quantizeCanvas
 // Post-quantize Stage
 /** @type {HTMLDivElement} */
 let postQuantizeStageList
-/** @type {HTMLOptionElement} */
+/** @type {HTMLSelectElement} */
 let postQuantizeStageSelect
 
 // Output Stage
@@ -142,6 +148,33 @@ let previousQuants = []
 function process() {
     let previousCanvas = canvasInput
     let updated = fullUpdate
+    if (updated) {
+        let canvasContext = canvasInput.getContext("2d")
+        if (imageScaleMode.value == "Scale To Fit") {
+            let maxWidth = imageWidthInput.value
+            let maxHeight = imageHeightInput.value
+            let ratio = imageInput.width / imageInput.height
+            let width = imageInput.width
+            let height = imageInput.height
+            if (width > maxWidth) {
+                width = maxWidth
+                height = width / ratio
+            }
+            if (height > maxHeight) {
+                height = maxHeight
+                width = height * ratio
+            }
+            canvasInput.width = width
+            canvasInput.height = height
+        } else if (imageScaleMode.value == "Stretch") {
+            canvasInput.width = imageWidthInput.value
+            canvasInput.height = imageHeightInput.value
+        } else {
+            canvasInput.width = imageInput.width
+            canvasInput.height = imageInput.height
+        }
+        canvasContext.drawImage(imageInput, 0, 0, canvasInput.width, canvasInput.height)
+    }
     fullUpdate = false
     for (let i = 0; i < preQuantizeStages.length; i++) {
         let stage = preQuantizeStages[i]
@@ -184,7 +217,17 @@ function loadPageElements() {
     canvasInput = document.getElementById("imageInputCanvas")
     autoProcessCheckbox = document.getElementById("autoProcessCheckbox")
     processButton = document.getElementById("processButton")
+    imageScaleMode = document.getElementById("imageScaleMode")
+    imageWidthInput = document.getElementById("imageWidthInput")
+    imageHeightInput = document.getElementById("imageHeightInput")
 
+    imageScaleMode.addEventListener("change", (event) => {
+        let hideInputs = event.target.value == "None"
+        imageWidthInput.hidden = hideInputs
+        imageHeightInput.hidden = hideInputs
+        fullUpdate = true
+        onSettingChange()
+    })
     fileInput.addEventListener("change", (event) => {
 		let selectedFile = event.target.files[0]
 		let reader = new FileReader()
@@ -196,16 +239,20 @@ function loadPageElements() {
 		reader.readAsDataURL(selectedFile)
 	})
     imageInput.addEventListener("load", (event) => {
-        let canvasContext = canvasInput.getContext("2d")
-        canvasInput.width = imageInput.width
-        canvasInput.height = imageInput.height
-        canvasContext.drawImage(imageInput, 0, 0)
         fullUpdate = true
-        onSettingChange()
+        process()
     })
     processButton.addEventListener("click", () => {
         fullUpdate = true
         process()
+    })
+    imageWidthInput.addEventListener("change", () => {
+        fullUpdate = true
+        onSettingChange()
+    })
+    imageHeightInput.addEventListener("change", () => {
+        fullUpdate = true
+        onSettingChange()
     })
 
     // Pre-quantize Stage
