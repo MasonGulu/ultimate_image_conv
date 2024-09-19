@@ -59,13 +59,16 @@ function chunkHistogram(q, x0, y0, w, h) {
     return hist
 }
 
-function sortHistogram(a) {
+function sortHistogram(a, wrong) {
     let list = []
     for (let i in a) {
         list.push({count:a[i],index:i})
     }
     list.sort((a, b) => {
-        return a.count > b.count
+        if (wrong) {
+            return a.count > b.count
+        }
+        return a.count < b.count
     })
     return list
 }
@@ -117,6 +120,15 @@ class ChunkFilter extends PostQuantizeFilter {
         this.blockWidthInput = this.addInput("Width")
         this.blockHeightInput = this.addInput("Height")
         this.blockColorInput = this.addInput("# Colors")
+        this.invertHistogram = document.createElement("input")
+        this.invertHistogram.type = "checkbox"
+        let invertHistLabel = document.createElement("label")
+        invertHistLabel.innerHTML = "Invert Histogram"
+        this.div.appendChild(invertHistLabel)
+        invertHistLabel.appendChild(this.invertHistogram)
+        this.invertHistogram.addEventListener("change", () => {
+            onSettingChange()
+        })
     }
 
     /** @param {QuantizedImage} quant */
@@ -129,7 +141,8 @@ class ChunkFilter extends PostQuantizeFilter {
         let blocksTall = quant.height / blockH
         for (let blockY = 0; blockY < blocksTall; blockY++) {
             for (let blockX = 0; blockX < blocksWide; blockX++) {
-                let sh = sortHistogram(chunkHistogram(quant, blockX * blockW, blockY * blockH, blockW, blockH))
+                let sh = sortHistogram(chunkHistogram(quant, blockX * blockW, blockY * blockH, blockW, blockH),
+                    this.invertHistogram.checked)
                 let closestColors = calculateClosestColors(quant.palette, sh, blockColors)
                 forEachChunk(quant, blockX * blockW, blockY * blockH, blockW, blockH, (i) => {
                     if (!isColorWithinFirstI(sh, quant.data[i], blockColors)) {
