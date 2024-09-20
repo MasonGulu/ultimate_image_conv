@@ -28,11 +28,11 @@ class PreQuantizeFilter {
         deleteButtonElement.addEventListener("click", (event) => {
             removePreQuantizeFilter(this)
         })
-        this.div.append(deleteButtonElement)
         let labelElement = document.createElement("h3")
         // labelElement.style = "display:inline"
         this.label = label
         labelElement.innerHTML = label
+        labelElement.append(deleteButtonElement)
         this.div.append(labelElement)
     }
     /**
@@ -177,8 +177,142 @@ class NoiseFilter extends PreQuantizeFilter {
     }
 }
 
+class RGB2YCbCrFilter extends PreQuantizeFilter {
+    label = "RGB to YCbCr"
+    constructor() {
+        super("RGB to YCbCr")
+    }
+    /**
+     * @param {HTMLCanvasElement} input
+     * @param {HTMLCanvasElement} output
+     */
+    process(input, output) {
+        super.process(input, output)
+        let outputCtx = output.getContext("2d")
+        let inputCtx = input.getContext("2d")
+        let imageData = inputCtx.getImageData(0, 0, input.width, input.height)
+        forEachImageData(imageData, function(red,green,blue,alpha) {
+            let y = 0.299 * red + 0.587 * green + 0.114 * blue
+            let cb = 128 - 0.168736 * red - 0.331264 * green + 0.5 * blue
+            let cr = 128 + 0.5 * red - 0.418668 * green - 0.081312 * blue
+            return [y, cb, cr, alpha]
+        })
+        outputCtx.putImageData(imageData, 0, 0)
+    }
+}
+class YCbCr2RGBFilter extends PreQuantizeFilter {
+    label = "YCbCr to RGB"
+    constructor() {
+        super("YCbCr to RGB")
+    }
+    /**
+     * @param {HTMLCanvasElement} input
+     * @param {HTMLCanvasElement} output
+     */
+    process(input, output) {
+        super.process(input, output)
+        let outputCtx = output.getContext("2d")
+        let inputCtx = input.getContext("2d")
+        let imageData = inputCtx.getImageData(0, 0, input.width, input.height)
+        forEachImageData(imageData, function(y,cb,cr,alpha) {
+            let r = y + 1.402 * (cr - 128)
+            let g = y - 0.344136 * (cb - 128) - 0.714136 * (cr - 128)
+            let b = y + 1.772 * (cb - 128)
+            return [r, g, b, alpha]
+        })
+        outputCtx.putImageData(imageData, 0, 0)
+    }
+}
+function deg(angle) {
+    return angle * (180 / Math.PI)
+}
+class RGB2HSIFilter extends PreQuantizeFilter {
+    label = "RGB to HSI"
+    constructor() {
+        super("RGB to HSI")
+    }
+    /**
+     * @param {HTMLCanvasElement} input
+     * @param {HTMLCanvasElement} output
+     */
+    process(input, output) {
+        super.process(input, output)
+        let outputCtx = output.getContext("2d")
+        let inputCtx = input.getContext("2d")
+        let imageData = inputCtx.getImageData(0, 0, input.width, input.height)
+        forEachImageData(imageData, function(r,g,b,alpha) {
+            r /= 255
+            g /= 255
+            b /= 255
+            let numerator = 0.5 * ((r - g) + (r - b));
+            let denominator = Math.sqrt((r - g) ** 2 + (r - b) * (g - b))
+            let argument = denominator === 0 ? 0 : numerator / denominator
+            argument = Math.max(-1, Math.min(argument, 1))
+            let theta = deg(Math.acos(argument))
+            let minRGB = Math.min(r, g, b)
+            let sumRGB = r + g + b
+            let s = sumRGB === 0 ? 0 : 1 - (3 / sumRGB) * minRGB
+            let i = (r + g + b) / 3
+            let h = b > g ? 360 - theta : theta
+            h = h % 360
+            if (h < 0) h += 360
+            return [(h / 360) * 255, s * 255, i * 255, alpha]
+        })
+        outputCtx.putImageData(imageData, 0, 0)
+    }
+}
+function rad(angle) {
+    return angle * (Math.PI / 180)
+}
+class HSI2RGBFilter extends PreQuantizeFilter {
+    label = "HSI to RGB"
+    constructor() {
+        super("HSI to RGB")
+    }
+    /**
+     * @param {HTMLCanvasElement} input
+     * @param {HTMLCanvasElement} output
+     */
+    process(input, output) {
+        super.process(input, output)
+        let outputCtx = output.getContext("2d")
+        let inputCtx = input.getContext("2d")
+        let imageData = inputCtx.getImageData(0, 0, input.width, input.height)
+        forEachImageData(imageData, function(h,s,i,alpha) {
+            let r, g, b
+            s /= 255
+            i /= 255
+            h = (h / 255) * 360
+            if (h >= 0 && h < 120) {
+                b = i * (1 - s)
+                r = i * (1 + (s * Math.cos(rad(h))) / Math.cos(rad(60 - h)))
+                g = 3 * i - (r + b)
+            } else if (h >= 120 && h < 240) {
+                h = h - 120
+                r = i * (1 - s)
+                g = i * (1 + (s * Math.cos(rad(h))) / Math.cos(rad(60 - h)))
+                b = 3 * i - (r + g)
+            } else {
+                h = h - 240
+                g = i * (1 - s)
+                b = i * (1 + (s * Math.cos(rad(h))) / Math.cos(rad(60 - h)))
+                r = 3 * i - (g + b)
+            }
+            r = Math.min(Math.max(r, 0), 1);
+            g = Math.min(Math.max(g, 0), 1);
+            b = Math.min(Math.max(b, 0), 1);
+            return [r * 255, g * 255, b * 255, alpha]
+        })
+        outputCtx.putImageData(imageData, 0, 0)
+    }
+}
+
 function registerPreFilters() {
     registerPreQuantizeFilter("Monochrome", MonochromeFilter)
     registerPreQuantizeFilter("Levels", LevelsFilter)
     registerPreQuantizeFilter("Noise", NoiseFilter)
+    registerPreQuantizeFilter("RGB to YCbCr", RGB2YCbCrFilter)
+    registerPreQuantizeFilter("YCbCr to RGB", YCbCr2RGBFilter)
+    registerPreQuantizeFilter("RGB to HSI", RGB2HSIFilter)
+    registerPreQuantizeFilter("HSI to RGB", HSI2RGBFilter)
 }
