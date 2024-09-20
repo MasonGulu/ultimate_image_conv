@@ -101,14 +101,10 @@ function isColorWithinFirstI(hist, color, i) {
 class ChunkFilter extends PostQuantizeFilter {
     label = "Chunk"
     addInput(label) {
-        let input = document.createElement("input")
+        let input = labeledInput(label, this.div)
         input.type = "number"
         input.min = 1
         input.value = 1
-        let widthLabel = document.createElement("label")
-        widthLabel.innerHTML = label
-        this.div.appendChild(widthLabel)
-        this.div.appendChild(input)
         input.addEventListener("change", (event) => {
             this.updated = true
             onSettingChange()
@@ -120,12 +116,7 @@ class ChunkFilter extends PostQuantizeFilter {
         this.blockWidthInput = this.addInput("Width")
         this.blockHeightInput = this.addInput("Height")
         this.blockColorInput = this.addInput("# Colors")
-        this.invertHistogram = document.createElement("input")
-        this.invertHistogram.type = "checkbox"
-        let invertHistLabel = document.createElement("label")
-        invertHistLabel.innerHTML = "Invert Histogram"
-        this.div.appendChild(invertHistLabel)
-        invertHistLabel.appendChild(this.invertHistogram)
+        this.invertHistogram = labeledCheckbox("Invert Histogram", this.div)
         this.invertHistogram.addEventListener("change", () => {
             onSettingChange()
         })

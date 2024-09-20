@@ -77,7 +77,34 @@ function addPreQuantizeFilter(label) {
     }
     filter = new preQuantizeFilterRegistry[label]
     preQuantizeStageList.appendChild(filter.div)
+    let index = preQuantizeStages.length
     preQuantizeStages.push(filter)
+    filter.index = index
+    fullUpdate = true
+    onSettingChange()
+}
+
+function movePreQuantizeFilter(index, dir) {
+    let newIndex = Number(index) + dir
+    if (dir == 0) return
+
+    if (newIndex < 0) newIndex = 0
+    if (newIndex >= preQuantizeStages.length) newIndex = preQuantizeStages.length - 1
+    if (newIndex == index) return
+
+    const item = preQuantizeStages.splice(index, 1)[0]
+    preQuantizeStages.splice(newIndex, 0, item)
+
+    console.log("Moved", index, "to", newIndex, "length", preQuantizeStages.length)
+
+    let elements = document.createDocumentFragment()
+    for (stage in preQuantizeStages) {
+        let entry = preQuantizeStages[stage]
+        entry.index = stage
+        elements.appendChild(entry.div)
+    }
+    preQuantizeStageList.innerHTML = null
+    preQuantizeStageList.appendChild(elements)
     fullUpdate = true
     onSettingChange()
 }

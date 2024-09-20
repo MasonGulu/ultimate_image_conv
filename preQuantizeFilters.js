@@ -23,16 +23,19 @@ class PreQuantizeFilter {
     constructor(label) {
         this.div = document.createElement("div")
         this.div.className = "element"
-        let deleteButtonElement = document.createElement("button")
-        deleteButtonElement.innerHTML = "🗑"
-        deleteButtonElement.addEventListener("click", (event) => {
+        labeledButton("🗑", this.div, (event) => {
             removePreQuantizeFilter(this)
+        })
+        labeledButton("⬆", this.div, (event) => {
+            movePreQuantizeFilter(this.index, -1)
+        })
+        labeledButton("⬇", this.div, (event) => {
+            movePreQuantizeFilter(this.index, 1)
         })
         let labelElement = document.createElement("h3")
         // labelElement.style = "display:inline"
         this.label = label
         labelElement.innerHTML = label
-        labelElement.append(deleteButtonElement)
         this.div.append(labelElement)
     }
     /**
@@ -75,12 +78,67 @@ class MonochromeFilter extends PreQuantizeFilter {
     }
 }
 
+class NormalizeFilter extends PreQuantizeFilter {
+    label = "Normalize"
+    constructor() {
+        super("Normalize")
+        this.normalizeRed = labeledCheckbox("Red", this.div)
+        this.normalizeRed.addEventListener("change", () => {
+            this.updated = true
+            onSettingChange()
+        })
+        this.normalizeGreen = labeledCheckbox("Green", this.div)
+        this.normalizeGreen.addEventListener("change", () => {
+            this.updated = true
+            onSettingChange()
+        })
+        this.normalizeBlue = labeledCheckbox("Blue", this.div)
+        this.normalizeBlue.addEventListener("change", () => {
+            this.updated = true
+            onSettingChange()
+        })
+    }
+    /**
+     * @param {HTMLCanvasElement} input
+     * @param {HTMLCanvasElement} output
+     */
+    process(input, output) {
+        super.process(input, output)
+        let outputCtx = output.getContext("2d")
+        let inputCtx = input.getContext("2d")
+        let imageData = inputCtx.getImageData(0, 0, input.width, input.height)
+        let maxRed = 1
+        let maxGreen = 1
+        let maxBlue = 1
+        forEachImageData(imageData, function(red,green,blue,alpha) {
+            maxRed = Math.max(red, maxRed)
+            maxGreen = Math.max(green, maxGreen)
+            maxBlue = Math.max(blue, maxBlue)
+            return [red,green,blue,alpha]
+        })
+        let normalizeRed = this.normalizeRed.checked
+        let normalizeBlue = this.normalizeBlue.checked
+        let normalizeGreen = this.normalizeGreen.checked
+        forEachImageData(imageData, function(red,green,blue,alpha) {
+            if (normalizeRed) {
+                red = (red / maxRed) * 255
+            }
+            if (normalizeBlue) {
+                blue = (blue / maxBlue) * 255
+            }
+            if (normalizeGreen) {
+                green = (green / maxGreen) * 255
+            }
+            return [red,green,blue,alpha]
+        })
+        outputCtx.putImageData(imageData, 0, 0)
+    }
+}
+
 class LevelsFilter extends PreQuantizeFilter {
     label = "Levels"
     addLevelInput(str) {
-        let label = document.createElement("label")
-        label.innerHTML = str
-        let input = document.createElement("input")
+        let input = labeledInput(str, this.div)
         input.type = "range"
         input.min = 0
         input.max = 1
@@ -90,8 +148,6 @@ class LevelsFilter extends PreQuantizeFilter {
             this.updated = true
             onSettingChange()
         })
-        this.div.appendChild(label)
-        this.div.appendChild(input)
         return input
     }
     constructor() {
@@ -118,43 +174,33 @@ class LevelsFilter extends PreQuantizeFilter {
 
 class NoiseFilter extends PreQuantizeFilter {
     addLevelInput(str) {
-        let label = document.createElement("label")
-        label.innerHTML = `${str} (1)`
-        let input = document.createElement("input")
+        let input = labeledInput(str, this.div)
         input.type = "range"
         input.min = 0
         input.max = 255
         input.step = 1
         input.value = 255
         input.addEventListener("change", (event) => {
-            label.innerHTML = `${str} (${event.target.value})`
             this.updated = true
             onSettingChange()
         })
+        return input
+    }
+    constructor() {
+        super("Noise")
+        this.noiseStrengthInput = this.addLevelInput("Strength")
         let button = document.createElement("button")
         button.innerHTML = "Refresh"
         button.addEventListener("click", (event) => {
             this.updated = true
             onSettingChange()
         })
-        this.div.appendChild(label)
-        this.div.appendChild(input)
         this.div.appendChild(button)
-        return input
-    }
-    constructor() {
-        super("Noise")
-        this.noiseStrengthInput = this.addLevelInput("Strength")
-        let rgbLabel = document.createElement("label")
-        rgbLabel.innerHTML = "RGB Noise"
-        this.div.appendChild(rgbLabel)
-        this.rgbInput = document.createElement("input")
-        this.rgbInput.type = "checkbox"
+        this.rgbInput = labeledCheckbox("RGB Noise", this.div)
         this.rgbInput.addEventListener("change", () => {
             this.updated = true
             onSettingChange()
         })
-        this.div.appendChild(this.rgbInput)
     }
     process(input, output) {
         super.process(input, output)
@@ -315,4 +361,5 @@ function registerPreFilters() {
     registerPreQuantizeFilter("YCbCr to RGB", YCbCr2RGBFilter)
     registerPreQuantizeFilter("RGB to HSI", RGB2HSIFilter)
     registerPreQuantizeFilter("HSI to RGB", HSI2RGBFilter)
+    registerPreQuantizeFilter("Normalize", NormalizeFilter)
 }
