@@ -20,7 +20,7 @@ class PreQuantizeFilter {
     /** 
      * @param {String} label 
      */
-    constructor(label) {
+    constructor(label, desc) {
         this.div = document.createElement("div")
         this.div.className = "element"
         labeledButton("🗑", this.div, (event) => {
@@ -37,6 +37,11 @@ class PreQuantizeFilter {
         this.label = label
         labelElement.innerHTML = label
         this.div.append(labelElement)
+        if (desc != null) {
+            let descElement = document.createElement("p")
+            descElement.innerHTML = desc
+            this.div.append(descElement)
+        }
     }
     /**
      * @param {HTMLCanvasElement} input
@@ -78,10 +83,62 @@ class MonochromeFilter extends PreQuantizeFilter {
     }
 }
 
+class HistogramEqFilter extends PreQuantizeFilter {
+    label = "Histogram Equalization"
+    constructor() {
+        super("Histogram Equalization", "Equalize the histogram of the red channel (use with YCbCr)")
+    }
+    /**
+     * @param {HTMLCanvasElement} input
+     * @param {HTMLCanvasElement} output
+     */
+    process(input, output) {
+        super.process(input, output)
+        let outputCtx = output.getContext("2d")
+        let inputCtx = input.getContext("2d")
+        let imageData = inputCtx.getImageData(0, 0, input.width, input.height)
+        this.histogramEqualization(imageData.data, outputCtx, input.width, input.height)
+    }
+    // chatgpt wrote this, and it seems to work?
+    histogramEqualization(data, ctx, width, height) {
+        const histogram = new Array(256).fill(0);
+        const cdf = new Array(256).fill(0);
+        const totalPixels = width * height;
+
+        // Calculate histogram
+        for (let i = 0; i < data.length; i += 4) {
+            const gray = data[i]; // Using the red channel (all are the same in grayscale)
+            histogram[gray]++;
+        }
+
+        // Calculate cumulative distribution function (CDF)
+        cdf[0] = histogram[0];
+        for (let i = 1; i < histogram.length; i++) {
+            cdf[i] = cdf[i - 1] + histogram[i];
+        }
+
+        // Normalize the CDF
+        for (let i = 0; i < cdf.length; i++) {
+            cdf[i] = Math.round((cdf[i] - cdf[0]) / (totalPixels - cdf[0]) * 255);
+        }
+
+        // Apply equalization to the image data
+        for (let i = 0; i < data.length; i += 4) {
+            const gray = data[i]; // Again, using the red channel for grayscale
+            const equalizedValue = cdf[gray];
+            data[i] = equalizedValue;     // R
+            // Alpha remains unchanged
+        }
+
+        // Put the equalized image data back to the canvas
+        ctx.putImageData(new ImageData(data, width, height), 0, 0);
+    }
+}
+
 class NormalizeFilter extends PreQuantizeFilter {
     label = "Normalize"
     constructor() {
-        super("Normalize")
+        super("Normalize", "Distribute the channels of an image across the whole range [0,255]")
         this.normalizeRed = labeledCheckbox("Red", this.div)
         this.normalizeRed.addEventListener("change", () => {
             this.updated = true
@@ -151,7 +208,7 @@ class LevelsFilter extends PreQuantizeFilter {
         return input
     }
     constructor() {
-        super("Levels")
+        super("Levels", "Reduce the levels of each channel of an image")
         this.redLevelInput = this.addLevelInput("Red")
         this.greenLevelInput = this.addLevelInput("Green")
         this.blueLevelInput = this.addLevelInput("Blue")
@@ -226,7 +283,7 @@ class NoiseFilter extends PreQuantizeFilter {
 class RGB2YCbCrFilter extends PreQuantizeFilter {
     label = "RGB to YCbCr"
     constructor() {
-        super("RGB to YCbCr")
+        super("RGB to YCbCr", "Convert image into the YCbCr color space")
     }
     /**
      * @param {HTMLCanvasElement} input
@@ -275,7 +332,7 @@ function deg(angle) {
 class RGB2HSIFilter extends PreQuantizeFilter {
     label = "RGB to HSI"
     constructor() {
-        super("RGB to HSI")
+        super("RGB to HSI", "Convert image into the HSI color space")
     }
     /**
      * @param {HTMLCanvasElement} input
@@ -362,4 +419,5 @@ function registerPreFilters() {
     registerPreQuantizeFilter("RGB to HSI", RGB2HSIFilter)
     registerPreQuantizeFilter("HSI to RGB", HSI2RGBFilter)
     registerPreQuantizeFilter("Normalize", NormalizeFilter)
+    registerPreQuantizeFilter("Histogram Equalization", HistogramEqFilter)
 }
