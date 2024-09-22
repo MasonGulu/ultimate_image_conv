@@ -409,6 +409,52 @@ class HSI2RGBFilter extends PreQuantizeFilter {
         outputCtx.putImageData(imageData, 0, 0)
     }
 }
+class OffsetFilter extends PreQuantizeFilter {
+    label = "Offset"
+    constructor() {
+        super("Offset")
+        let onUpdate = (event) => {
+            this.updated = true
+            onSettingChange()
+        }
+        this.redOffset = labeledRange("Red", this.div, 0, 255, 0, 1)
+        this.redOffset.addEventListener("change", onUpdate)
+        this.greenOffset = labeledRange("Green", this.div, 0, 255, 0, 1)
+        this.greenOffset.addEventListener("change", onUpdate)
+        this.blueOffset = labeledRange("Blue", this.div, 0, 255, 0, 1)
+        this.blueOffset.addEventListener("change", onUpdate)
+        this.wrapValues = labeledCheckbox("Wrap", this.div)
+        this.wrapValues.addEventListener("click", onUpdate)
+    }
+    /**
+     * @param {HTMLCanvasElement} input
+     * @param {HTMLCanvasElement} output
+     */
+    process(input, output) {
+        super.process(input, output)
+        let outputCtx = output.getContext("2d")
+        let inputCtx = input.getContext("2d")
+        let imageData = inputCtx.getImageData(0, 0, input.width, input.height)
+        let dr, dg, db
+        dr = Number(this.redOffset.value)
+        dg = Number(this.greenOffset.value)
+        db = Number(this.blueOffset.value)
+        let wrap = this.wrapValues.checked
+        forEachImageData(imageData, function(red,green,blue,alpha) {
+            let nr, ng, nb
+            nr = red   + dr
+            ng = green + dg
+            nb = blue  + db
+            if (wrap) {
+                nr = nr % 256
+                ng = ng % 256
+                nb = nb % 256
+            }
+            return [nr, ng, nb, alpha]
+        })
+        outputCtx.putImageData(imageData, 0, 0)
+    }
+}
 
 function registerPreFilters() {
     registerPreQuantizeFilter("Monochrome", MonochromeFilter)
@@ -420,4 +466,5 @@ function registerPreFilters() {
     registerPreQuantizeFilter("HSI to RGB", HSI2RGBFilter)
     registerPreQuantizeFilter("Normalize", NormalizeFilter)
     registerPreQuantizeFilter("Histogram Equalization", HistogramEqFilter)
+    registerPreQuantizeFilter("Offset", OffsetFilter)
 }

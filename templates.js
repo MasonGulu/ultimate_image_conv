@@ -8,7 +8,6 @@ function labeledCheckbox(str, div) {
     return checkbox
 }
 
-
 function labeledInput(str, div) {
     let input = document.createElement("input")
     let label = document.createElement("label")
@@ -24,4 +23,18 @@ function labeledButton(str, div, callback) {
     button.addEventListener("click", callback)
     div.appendChild(button)
     return button
+}
+
+function labeledRange(str, div, min, max, start, step) {
+    let range = document.createElement("input")
+    range.type = "range"
+    range.min = min
+    range.max = max
+    range.value = start
+    range.step = step
+    let label = document.createElement("label")
+    label.innerHTML = str
+    label.appendChild(range)
+    div.appendChild(label)
+    return range
 }
