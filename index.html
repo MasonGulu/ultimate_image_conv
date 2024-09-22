@@ -50,13 +50,33 @@
         </div>
         <div id="quantizeStage" class="element">
             <h3>Quantizer</h3>
-            <label for="nColors">#Colors</label>
-            <input id="nColors" type="number" value="16" min="2" max="256">
             <label for="ditherMode">Dither</label>
             <select id="ditherMode">
                 <option>None</option>
                 <option>FloydSteinberg</option>
+                <option>FalseFloydSteinberg</option>
+                <option>Stucki</option>
+                <option>Atkinson</option>
+                <option>Jarvis</option>
+                <option>Burkes</option>
+                <option>Sierra</option>
+                <option>TwoSierra</option>
+                <option>SierraLite</option>
             </select>
+            <br>
+            <br>
+            <div class="element">
+                <select id="paletteMode">
+                    <option>Automatic</option>
+                    <option>Custom</option>
+                </select>
+                <input value="[]" disabled="true" id="paletteInput">
+                <div id="autoPaletteDiv">
+                    <label>#Colors <input id="nColors" type="number" value="16" min="2" max="256"></label>
+                    <button id="calculateButton">Calculate</button>
+                    <label><input type="checkbox" checked="true" id="autoCalculateCheckbox">Auto Calculate</label>
+                </div>
+            </div>
             <br>
             <canvas id="quantizeCanvas"></canvas>
         </div>

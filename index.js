@@ -26,10 +26,20 @@ let preQuantizeStageList
 let preQuantizeStageSelect
 
 // Quantize Stage
+/** @type {HTMLSelectElement} */
+let ditherModeInput
+/** @type {HTMLSelectElement} */
+let paletteMode
+/** @type {HTMLInputElement} */
+let paletteInput
+/** @type {HTMLDivElement} */
+let autoPaletteDiv
 /** @type {HTMLInputElement} */
 let nColorsInput
+/** @type {HTMLButtonElement} */
+let calculateButton
 /** @type {HTMLInputElement} */
-let ditherModeInput
+let autoCalculateCheckbox
 /** @type {HTMLCanvasElement} */
 let quantizeCanvas
 
@@ -169,8 +179,17 @@ function removePostQuantizeFilter(filter) {
     onSettingChange()
 }
 
+let palette = []
+function updatePalette(imageData, nColors, mode) {
+    let q = new QuantizedImage()
+    q.process(imageData, nColors, mode)
+    palette = q.palette
+    paletteInput.value = JSON.stringify(palette)
+}
+
 let fullUpdate = true
 let quantizeUpdate = false
+let doPaletteUpdate = false
 let previousQuants = []
 function process() {
     let previousCanvas = canvasInput
@@ -218,8 +237,12 @@ function process() {
     if (updated) {
         let previousCtx = previousCanvas.getContext("2d")
         let imageData = previousCtx.getImageData(0, 0, previousCanvas.width, previousCanvas.height)
-        let previousQuant = new QuantizedImage()
-        previousQuant.process(imageData, nColorsInput.value, ditherModeInput.value)
+        if (doPaletteUpdate || (autoCalculateCheckbox.checked && paletteMode.value != "Custom")) {
+            doPaletteUpdate = false
+            updatePalette(imageData, nColorsInput.value, ditherModeInput.value)
+        }
+        let previousQuant = new QuantizedImage(null, null, null, palette)
+        previousQuant.process(imageData, nColorsInput.value, ditherModeInput.value, palette)
         quantizeCanvas.width = previousCanvas.width
         quantizeCanvas.height = previousCanvas.height
         let quantizeCtx = quantizeCanvas.getContext("2d")
@@ -292,8 +315,13 @@ function loadPageElements() {
     })
 
     // Quantize Stage
-    nColorsInput = document.getElementById("nColors")
     ditherModeInput = document.getElementById("ditherMode")
+    paletteMode = document.getElementById("paletteMode")
+    paletteInput = document.getElementById("paletteInput")
+    autoPaletteDiv = document.getElementById("autoPaletteDiv")
+    nColorsInput = document.getElementById("nColors")
+    calculateButton = document.getElementById("calculateButton")
+    autoCalculateCheckbox = document.getElementById("autoCalculateCheckbox")
     quantizeCanvas = document.getElementById("quantizeCanvas")
 
     nColorsInput.addEventListener("change", () => {
@@ -303,6 +331,31 @@ function loadPageElements() {
     ditherModeInput.addEventListener("change", () => {
         quantizeUpdate = true
         onSettingChange()
+    })
+    calculateButton.addEventListener("click", () => {
+        quantizeUpdate = true
+        doPaletteUpdate = true
+        onSettingChange()
+    })
+    autoCalculateCheckbox.addEventListener("change", () => {
+        onSettingChange()
+    })
+    paletteMode.addEventListener("change", () => {
+        let hideAuto = paletteMode.value == "Custom"
+        autoPaletteDiv.hidden = hideAuto
+        paletteInput.disabled = !hideAuto
+    })
+    paletteInput.addEventListener("change", () => {
+        console.log("Changed")
+        try {
+            let decoded = JSON.parse(paletteInput.value)
+            palette = decoded
+            paletteInput.style.borderColor = "green"
+            quantizeUpdate = true
+            onSettingChange()
+        } catch (error) {
+            paletteInput.style.borderColor = "red"
+        }
     })
 
     // Post-quantize Stage

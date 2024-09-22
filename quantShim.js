@@ -25,10 +25,12 @@ class QuantizedImage {
         }
         if (ditherMode == "None") ditherMode = null
         let q = new RgbQuant(opts)
-        q.sample(imageData)
+        if (this.palette == null) {
+            q.sample(imageData)
+            this.palette = q.palette(true)
+        }
         this.width = imageData.width
         this.height = imageData.height
-        this.palette = q.palette(true)
         this.data = q.reduce(imageData, 2, ditherMode)
     }
 
