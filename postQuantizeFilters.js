@@ -149,19 +149,6 @@ class ChunkFilter extends PostQuantizeFilter {
     }
 }
 
-class BlankFilter extends PostQuantizeFilter {
-    constructor() {
-        super("Blank")
-    }
-    process(quant) {
-        super.process(quant)
-        let ctx = this.outputCanvas.getContext("2d")
-        ctx.putImageData(quant.render(), 0, 0)
-        return quant
-    }
-}
-
 function registerPostFilters() {
     registerPostQuantizeFilter("Chunk", ChunkFilter)
-    registerPostQuantizeFilter("Blank", BlankFilter)
 }
