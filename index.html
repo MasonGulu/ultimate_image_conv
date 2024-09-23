@@ -20,11 +20,13 @@
             <select id="presets">
                 <option>None</option>
                 <optgroup label="CGA">
-                    <option>CGA 1bpp</option>
+                    <option>CGA 1b</option>
+                    <option>CGA 2b0L</option>
                 </optgroup>
                 <optgroup label="CC">
                     <option>CC BIMG</option>
                     <option>CC BBF</option>
+                    <option>CC NFP</option>
                 </optgroup>
             </select>
             <button id="processButton">Process</button>
@@ -105,6 +107,7 @@
         <div id="previewStage" class="element">
             <h3>Preview</h3>
             <button id="savePreviewButton">Save</button>
+            <canvas id="imagePreviewCanvas"></canvas>
         </div>
     </div>
 </body>

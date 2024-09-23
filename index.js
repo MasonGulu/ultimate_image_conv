@@ -62,6 +62,8 @@ let saveOutputButton
 // Preview Stage
 /** @type {HTMLButtonElement} */
 let savePreviewButton
+/** @type {HTMLCanvasElement} */
+let imagePreviewCanvas
 
 // Registry and stage information
 /**
@@ -220,7 +222,7 @@ let quantizeUpdate = false
 let doPaletteUpdate = false
 let previousQuants = []
 function process() {
-    document.body.style.cursor = "wait"
+    document.body.style.cursor = "not-allowed"
     let previousCanvas = canvasInput
     let updated = fullUpdate
     fullUpdate = false
@@ -304,6 +306,16 @@ function process() {
             let thisQuant = previousQuants[i + postOffset].copy()
             previousQuants[i + postOffset + 1] = stage.process(thisQuant)
         }
+    }
+    if (updated) {
+        let previewQuant = previousQuants[postOffset + postQuantizePresetStages.length].copy()
+        if (selectedPreset && selectedPreset.preview) {
+            previewQuant = selectedPreset.preview(previewQuant)
+        }
+        let previewCtx = imagePreviewCanvas.getContext("2d")
+        imagePreviewCanvas.width = previewQuant.width
+        imagePreviewCanvas.height = previewQuant.height
+        previewCtx.putImageData(previewQuant.render(), 0, 0)
     }
     document.body.style.cursor = "default"
 }
@@ -437,6 +449,7 @@ function loadPageElements() {
     saveOutputButton = document.getElementById("saveOutputButton")
 
     // Preview Stage
+    imagePreviewCanvas = document.getElementById("imagePreviewCanvas")
     savePreviewButton = document.getElementById("savePreviewButton")
 }
 
@@ -444,6 +457,7 @@ let processTimer
 function onSettingChange() {
     if (autoProcessCheckbox.checked) {
         clearTimeout(processTimer)
+        document.body.style.cursor = "wait"
         window.setTimeout(process, 100)
     }
 }
