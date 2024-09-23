@@ -3,20 +3,30 @@ class PostQuantizeFilter {
     /** 
      * @param {String} label 
      */
-    constructor(label) {
+    constructor(label, desc, locked) {
         this.div = document.createElement("div")
         this.div.className = "element"
-        let deleteButtonElement = document.createElement("button")
-        deleteButtonElement.innerHTML = "🗑"
-        deleteButtonElement.addEventListener("click", (event) => {
-            removePostQuantizeFilter(this)
-        })
-        this.div.append(deleteButtonElement)
+        if (locked) {
+            this.div.className = "element preset"
+        }
+        if (!locked) {
+            let deleteButtonElement = document.createElement("button")
+            deleteButtonElement.innerHTML = "🗑"
+            deleteButtonElement.addEventListener("click", (event) => {
+                removePostQuantizeFilter(this)
+            })
+            this.div.append(deleteButtonElement)
+        }
         let labelElement = document.createElement("h3")
         // labelElement.style = "display:inline"
         this.label = label
         labelElement.innerHTML = label
         this.div.append(labelElement)
+        if (desc != null) {
+            let descElement = document.createElement("p")
+            descElement.innerHTML = desc
+            this.div.append(descElement)
+        }
     }
 
     /** @param {QuantizedImage} quant */
@@ -100,8 +110,9 @@ function isColorWithinFirstI(hist, color, i) {
 
 class ChunkFilter extends PostQuantizeFilter {
     label = "Chunk"
-    addInput(label) {
+    addInput(label,locked) {
         let input = labeledInput(label, this.div)
+        input.disabled = locked
         input.type = "number"
         input.min = 1
         input.value = 1
@@ -111,15 +122,20 @@ class ChunkFilter extends PostQuantizeFilter {
         })
         return input
     }
-    constructor() {
-        super("Chunk")
-        this.blockWidthInput = this.addInput("Width")
-        this.blockHeightInput = this.addInput("Height")
-        this.blockColorInput = this.addInput("# Colors")
+    constructor(locked, args) {
+        super("Chunk", null, locked)
+        this.blockWidthInput = this.addInput("Width", locked)
+        this.blockHeightInput = this.addInput("Height", locked)
+        this.blockColorInput = this.addInput("# Colors", locked)
         this.invertHistogram = labeledCheckbox("Invert Histogram", this.div)
+        this.invertHistogram.disabled = locked
         this.invertHistogram.addEventListener("change", () => {
             onSettingChange()
         })
+        args = args || {}
+        this.blockWidthInput.value = args.w || 1
+        this.blockHeightInput.value = args.h || 1
+        this.blockColorInput.value = args.n || 1
     }
 
     /** @param {QuantizedImage} quant */

@@ -20,18 +20,23 @@ class PreQuantizeFilter {
     /** 
      * @param {String} label 
      */
-    constructor(label, desc) {
+    constructor(label, desc, locked) {
         this.div = document.createElement("div")
         this.div.className = "element"
-        labeledButton("🗑", this.div, (event) => {
-            removePreQuantizeFilter(this)
-        })
-        labeledButton("⬆", this.div, (event) => {
-            movePreQuantizeFilter(this.index, -1)
-        })
-        labeledButton("⬇", this.div, (event) => {
-            movePreQuantizeFilter(this.index, 1)
-        })
+        if (locked) {
+            this.div.className = "element preset"
+        }
+        if (!locked) {
+            labeledButton("🗑", this.div, (event) => {
+                removePreQuantizeFilter(this)
+            })
+            labeledButton("⬆", this.div, (event) => {
+                movePreQuantizeFilter(this.index, -1)
+            })
+            labeledButton("⬇", this.div, (event) => {
+                movePreQuantizeFilter(this.index, 1)
+            })
+        }
         let labelElement = document.createElement("h3")
         // labelElement.style = "display:inline"
         this.label = label
@@ -63,8 +68,8 @@ class PreQuantizeFilter {
 
 class MonochromeFilter extends PreQuantizeFilter {
     label = "Monochrome"
-    constructor() {
-        super("Monochrome")
+    constructor(locked) {
+        super("Monochrome", null, locked)
     }
     /**
      * @param {HTMLCanvasElement} input
@@ -85,8 +90,8 @@ class MonochromeFilter extends PreQuantizeFilter {
 
 class HistogramEqFilter extends PreQuantizeFilter {
     label = "Histogram Equalization"
-    constructor() {
-        super("Histogram Equalization", "Equalize the histogram of the red channel (use with YCbCr)")
+    constructor(locked) {
+        super("Histogram Equalization", "Equalize the histogram of the red channel (use with YCbCr)", locked)
     }
     /**
      * @param {HTMLCanvasElement} input
@@ -137,23 +142,26 @@ class HistogramEqFilter extends PreQuantizeFilter {
 
 class NormalizeFilter extends PreQuantizeFilter {
     label = "Normalize"
-    constructor() {
-        super("Normalize", "Distribute the channels of an image across the whole range [0,255]")
+    constructor(locked) {
+        super("Normalize", "Distribute the channels of an image across the whole range [0,255]", locked)
         this.normalizeRed = labeledCheckbox("Red", this.div)
         this.normalizeRed.addEventListener("change", () => {
             this.updated = true
             onSettingChange()
         })
+        this.normalizeRed.disabled = locked
         this.normalizeGreen = labeledCheckbox("Green", this.div)
         this.normalizeGreen.addEventListener("change", () => {
             this.updated = true
             onSettingChange()
         })
+        this.normalizeGreen.disabled = locked
         this.normalizeBlue = labeledCheckbox("Blue", this.div)
         this.normalizeBlue.addEventListener("change", () => {
             this.updated = true
             onSettingChange()
         })
+        this.normalizeBlue.disabled = locked
     }
     /**
      * @param {HTMLCanvasElement} input
@@ -194,9 +202,10 @@ class NormalizeFilter extends PreQuantizeFilter {
 
 class LevelsFilter extends PreQuantizeFilter {
     label = "Levels"
-    addLevelInput(str) {
+    addLevelInput(str,locked) {
         let input = labeledInput(str, this.div)
         input.type = "range"
+        input.disabled = locked
         input.min = 0
         input.max = 1
         input.step = 0.05
@@ -207,11 +216,11 @@ class LevelsFilter extends PreQuantizeFilter {
         })
         return input
     }
-    constructor() {
-        super("Levels", "Reduce the levels of each channel of an image")
-        this.redLevelInput = this.addLevelInput("Red")
-        this.greenLevelInput = this.addLevelInput("Green")
-        this.blueLevelInput = this.addLevelInput("Blue")
+    constructor(locked) {
+        super("Levels", "Reduce the levels of each channel of an image", locked)
+        this.redLevelInput = this.addLevelInput("Red",locked)
+        this.greenLevelInput = this.addLevelInput("Green",locked)
+        this.blueLevelInput = this.addLevelInput("Blue",locked)
     }
 
     process(input, output) {
@@ -230,10 +239,11 @@ class LevelsFilter extends PreQuantizeFilter {
 }
 
 class NoiseFilter extends PreQuantizeFilter {
-    addLevelInput(str) {
+    addLevelInput(str,locked) {
         let input = labeledInput(str, this.div)
         input.type = "range"
         input.min = 0
+        input.disabled = locked
         input.max = 255
         input.step = 1
         input.value = 255
@@ -243,9 +253,9 @@ class NoiseFilter extends PreQuantizeFilter {
         })
         return input
     }
-    constructor() {
-        super("Noise")
-        this.noiseStrengthInput = this.addLevelInput("Strength")
+    constructor(locked) {
+        super("Noise", null, locked)
+        this.noiseStrengthInput = this.addLevelInput("Strength", locked)
         let button = document.createElement("button")
         button.innerHTML = "Refresh"
         button.addEventListener("click", (event) => {
@@ -254,6 +264,7 @@ class NoiseFilter extends PreQuantizeFilter {
         })
         this.div.appendChild(button)
         this.rgbInput = labeledCheckbox("RGB Noise", this.div)
+        this.rgbInput.disabled = true
         this.rgbInput.addEventListener("change", () => {
             this.updated = true
             onSettingChange()
@@ -282,8 +293,8 @@ class NoiseFilter extends PreQuantizeFilter {
 
 class RGB2YCbCrFilter extends PreQuantizeFilter {
     label = "RGB to YCbCr"
-    constructor() {
-        super("RGB to YCbCr", "Convert image into the YCbCr color space")
+    constructor(locked) {
+        super("RGB to YCbCr", "Convert image into the YCbCr color space", locked)
     }
     /**
      * @param {HTMLCanvasElement} input
@@ -305,8 +316,8 @@ class RGB2YCbCrFilter extends PreQuantizeFilter {
 }
 class YCbCr2RGBFilter extends PreQuantizeFilter {
     label = "YCbCr to RGB"
-    constructor() {
-        super("YCbCr to RGB")
+    constructor(locked) {
+        super("YCbCr to RGB", null, locked)
     }
     /**
      * @param {HTMLCanvasElement} input
@@ -331,8 +342,8 @@ function deg(angle) {
 }
 class RGB2HSIFilter extends PreQuantizeFilter {
     label = "RGB to HSI"
-    constructor() {
-        super("RGB to HSI", "Convert image into the HSI color space")
+    constructor(locked) {
+        super("RGB to HSI", "Convert image into the HSI color space", locked)
     }
     /**
      * @param {HTMLCanvasElement} input
@@ -369,8 +380,8 @@ function rad(angle) {
 }
 class HSI2RGBFilter extends PreQuantizeFilter {
     label = "HSI to RGB"
-    constructor() {
-        super("HSI to RGB")
+    constructor(locked) {
+        super("HSI to RGB", null, locked)
     }
     /**
      * @param {HTMLCanvasElement} input
@@ -411,19 +422,23 @@ class HSI2RGBFilter extends PreQuantizeFilter {
 }
 class OffsetFilter extends PreQuantizeFilter {
     label = "Offset"
-    constructor() {
-        super("Offset")
+    constructor(locked) {
+        super("Offset", "Add an offset to each color channel.", locked)
         let onUpdate = (event) => {
             this.updated = true
             onSettingChange()
         }
         this.redOffset = labeledRange("Red", this.div, 0, 255, 0, 1)
+        this.redOffset.disabled = locked
         this.redOffset.addEventListener("change", onUpdate)
         this.greenOffset = labeledRange("Green", this.div, 0, 255, 0, 1)
+        this.greenOffset.disabled = locked
         this.greenOffset.addEventListener("change", onUpdate)
         this.blueOffset = labeledRange("Blue", this.div, 0, 255, 0, 1)
+        this.blueOffset.disabled = locked
         this.blueOffset.addEventListener("change", onUpdate)
         this.wrapValues = labeledCheckbox("Wrap", this.div)
+        this.wrapValues.disabled = locked
         this.wrapValues.addEventListener("click", onUpdate)
     }
     /**

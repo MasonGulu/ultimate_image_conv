@@ -18,10 +18,14 @@ let imageScaleMode
 let imageWidthInput
 /** @type {HTMLInputElement} */
 let imageHeightInput
+/** @type {HTMLSelectElement} */
+let imageScalePresets
 
 // Pre-quantize Stage
 /** @type {HTMLDivElement} */
 let preQuantizeStageList
+/** @type {HTMLDivElement} */
+let preQuantizePresetStageList
 /** @type {HTMLSelectElement} */
 let preQuantizeStageSelect
 
@@ -46,6 +50,8 @@ let quantizeCanvas
 // Post-quantize Stage
 /** @type {HTMLDivElement} */
 let postQuantizeStageList
+/** @type {HTMLDivElement} */
+let postQuantizePresetStageList
 /** @type {HTMLSelectElement} */
 let postQuantizeStageSelect
 
@@ -67,6 +73,10 @@ let preQuantizeFilterRegistry = {}
  * @type {PreQuantizeFilter[]}
  */
 let preQuantizeStages = []
+/**
+ * @type {PreQuantizeFilter[]}
+ */
+let preQuantizePresetStages = []
 
 /**
  * @type {Map<string,PostQuantizeFilter>}
@@ -77,19 +87,31 @@ let postQuantizeFilterRegistry = {}
  * @type {PostQuantizeFilter[]}
  */
 let postQuantizeStages = []
+/**
+ * @type {PostQuantizeFilter[]}
+ */
+let postQuantizePresetStages = []
 
 /**
  * @param {string} label
+ * @param {boolean} locked
  */
-function addPreQuantizeFilter(label) {
+function addPreQuantizeFilter(label, locked) {
     if (preQuantizeFilterRegistry[label] == null) {
         return
     }
-    filter = new preQuantizeFilterRegistry[label]
-    preQuantizeStageList.appendChild(filter.div)
-    let index = preQuantizeStages.length
-    preQuantizeStages.push(filter)
-    filter.index = index
+    filter = new preQuantizeFilterRegistry[label](locked)
+    if (locked) {
+        preQuantizePresetStageList.appendChild(filter.div)
+        let index = preQuantizePresetStages.length
+        preQuantizePresetStages.push(filter)
+        filter.index = index
+    } else {
+        preQuantizeStageList.appendChild(filter.div)
+        let index = preQuantizeStages.length
+        preQuantizeStages.push(filter)
+        filter.index = index
+    }
     fullUpdate = true
     onSettingChange()
 }
@@ -145,14 +167,20 @@ function removePreQuantizeFilter(filter) {
 
 /**
  * @param {string} label
+ * @param {boolean} locked
  */
-function addPostQuantizeFilter(label) {
+function addPostQuantizeFilter(label, locked, args) {
     if (postQuantizeFilterRegistry[label] == null) {
         return
     }
-    filter = new postQuantizeFilterRegistry[label]
-    postQuantizeStageList.appendChild(filter.div)
-    postQuantizeStages.push(filter)
+    filter = new postQuantizeFilterRegistry[label](locked, args)
+    if (locked) {
+        postQuantizePresetStageList.appendChild(filter.div)
+        postQuantizePresetStages.push(filter)
+    } else {
+        postQuantizeStageList.appendChild(filter.div)
+        postQuantizeStages.push(filter)
+    }
     fullUpdate = true
     onSettingChange()
 }
@@ -179,7 +207,7 @@ function removePostQuantizeFilter(filter) {
     onSettingChange()
 }
 
-let palette = []
+let palette = [[0,0,0], [255,0,0,], [0,255,0], [0,0,255], [255,255,255]]
 function updatePalette(imageData, nColors, mode) {
     let q = new QuantizedImage()
     q.process(imageData, nColors, mode)
@@ -192,8 +220,10 @@ let quantizeUpdate = false
 let doPaletteUpdate = false
 let previousQuants = []
 function process() {
+    document.body.style.cursor = "wait"
     let previousCanvas = canvasInput
     let updated = fullUpdate
+    fullUpdate = false
     if (updated) {
         let canvasContext = canvasInput.getContext("2d")
         if (imageScaleMode.value == "Scale To Fit") {
@@ -221,9 +251,18 @@ function process() {
         }
         canvasContext.drawImage(imageInput, 0, 0, canvasInput.width, canvasInput.height)
     }
-    fullUpdate = false
     for (let i = 0; i < preQuantizeStages.length; i++) {
         let stage = preQuantizeStages[i]
+        let thisCanvas = document.createElement("canvas")
+        updated = updated || stage.updated
+        if (updated) {
+            stage.process(previousCanvas, thisCanvas)
+            stage.updated = false
+        }
+        previousCanvas = stage.outputCanvas
+    }
+    for (let i = 0; i < preQuantizePresetStages.length; i++) {
+        let stage = preQuantizePresetStages[i]
         let thisCanvas = document.createElement("canvas")
         updated = updated || stage.updated
         if (updated) {
@@ -237,7 +276,7 @@ function process() {
     if (updated) {
         let previousCtx = previousCanvas.getContext("2d")
         let imageData = previousCtx.getImageData(0, 0, previousCanvas.width, previousCanvas.height)
-        if (doPaletteUpdate || (autoCalculateCheckbox.checked && paletteMode.value != "Custom")) {
+        if (doPaletteUpdate || (autoCalculateCheckbox.checked && paletteMode.value == "Automatic")) {
             doPaletteUpdate = false
             updatePalette(imageData, nColorsInput.value, ditherModeInput.value)
         }
@@ -257,6 +296,16 @@ function process() {
             previousQuants[i+1] = stage.process(thisQuant)
         }
     }
+    let postOffset = postQuantizeStages.length
+    for (let i = 0; i < postQuantizePresetStages.length; i++) {
+        let stage = postQuantizePresetStages[i]
+        updated = updated || stage.updated
+        if (updated) {
+            let thisQuant = previousQuants[i + postOffset].copy()
+            previousQuants[i + postOffset + 1] = stage.process(thisQuant)
+        }
+    }
+    document.body.style.cursor = "default"
 }
 
 function loadPageElements() {
@@ -270,6 +319,7 @@ function loadPageElements() {
     imageScaleMode = document.getElementById("imageScaleMode")
     imageWidthInput = document.getElementById("imageWidthInput")
     imageHeightInput = document.getElementById("imageHeightInput")
+    imageScalePresets = document.getElementById("imageScalePresets")
 
     imageScaleMode.addEventListener("change", (event) => {
         let hideInputs = event.target.value == "None"
@@ -277,6 +327,9 @@ function loadPageElements() {
         imageHeightInput.hidden = hideInputs
         fullUpdate = true
         onSettingChange()
+    })
+    presetInput.addEventListener("change", () => {
+        setPreset(presetInput.value)
     })
     fileInput.addEventListener("change", (event) => {
 		let selectedFile = event.target.files[0]
@@ -304,9 +357,18 @@ function loadPageElements() {
         fullUpdate = true
         onSettingChange()
     })
+    imageScalePresets.addEventListener("change", () => {
+        let [_, width, height] = imageScalePresets.value.match(/(\d+)x(\d+)/)
+        imageWidthInput.value = width
+        imageHeightInput.value = height
+        imageScalePresets.value = ""
+        fullUpdate = true
+        onSettingChange()
+    })
 
     // Pre-quantize Stage
     preQuantizeStageList = document.getElementById("preQuantizeStageList")
+    preQuantizePresetStageList = document.getElementById("preQuantizePresetStageList")
     preQuantizeStageSelect = document.getElementById("preQuantizeStageSelect")
 
     preQuantizeStageSelect.addEventListener("change", (event) => {
@@ -341,12 +403,15 @@ function loadPageElements() {
         onSettingChange()
     })
     paletteMode.addEventListener("change", () => {
-        let hideAuto = paletteMode.value == "Custom"
+        let hideAuto = paletteMode.value != "Automatic"
         autoPaletteDiv.hidden = hideAuto
-        paletteInput.disabled = !hideAuto
+        paletteInput.disabled = paletteMode.value != "Custom"
+        if (paletteMode.value == "Preset") {
+            paletteInput.value = JSON.stringify(presetPalette)
+            paletteInput.dispatchEvent(new Event("change"))
+        }
     })
     paletteInput.addEventListener("change", () => {
-        console.log("Changed")
         try {
             let decoded = JSON.parse(paletteInput.value)
             palette = decoded
@@ -360,6 +425,7 @@ function loadPageElements() {
 
     // Post-quantize Stage
     postQuantizeStageList = document.getElementById("postQuantizeStageList")
+    postQuantizePresetStageList = document.getElementById("postQuantizePresetStageList")
     postQuantizeStageSelect = document.getElementById("postQuantizeStageSelect")
 
     postQuantizeStageSelect.addEventListener("change", (event) => {
@@ -374,9 +440,11 @@ function loadPageElements() {
     savePreviewButton = document.getElementById("savePreviewButton")
 }
 
+let processTimer
 function onSettingChange() {
     if (autoProcessCheckbox.checked) {
-        process()
+        clearTimeout(processTimer)
+        window.setTimeout(process, 100)
     }
 }
 

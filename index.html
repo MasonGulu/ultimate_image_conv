@@ -7,6 +7,7 @@
     <script type="text/javascript" src="quantShim.js"></script>
     <script type="text/javascript" src="preQuantizeFilters.js"></script>
     <script type="text/javascript" src="postQuantizeFilters.js"></script>
+    <script type="text/javascript" src="presets.js"></script>
     <script type="text/javascript" src="index.js"></script>
     <title>Ultimate Image Converter</title>
 </head>
@@ -19,11 +20,11 @@
             <select id="presets">
                 <option>None</option>
                 <optgroup label="CGA">
-                    <option>1bpp</option>
+                    <option>CGA 1bpp</option>
                 </optgroup>
                 <optgroup label="CC">
-                    <option>BIMG</option>
-                    <option>BBF</option>
+                    <option>CC BIMG</option>
+                    <option>CC BBF</option>
                 </optgroup>
             </select>
             <button id="processButton">Process</button>
@@ -37,6 +38,12 @@
                 </select>
                 <input type="number" min="1" value="640" id="imageWidthInput">
                 <input type="number" min="1" value="480" id="imageHeightInput">
+                <select id="imageScalePresets">
+                    <option></option>
+                    <option>640x480</option>
+                    <option>800x600</option>
+                    <option>1024x720</option>
+                </select>
             </div>
             <br>
             <img id="imageInput" hidden="true"/>
@@ -45,6 +52,8 @@
         <div id="preQuantizeStage" class="element">
             <h3>Pre-Quantize</h3>
             <div id="preQuantizeStageList">
+            </div>
+            <div id="preQuantizePresetStageList" class="preset">
             </div>
             <select id="preQuantizeStageSelect"></select>
         </div>
@@ -69,6 +78,7 @@
                 <select id="paletteMode">
                     <option>Automatic</option>
                     <option>Custom</option>
+                    <option>Preset</option>
                 </select>
                 <input value="[]" disabled="true" id="paletteInput">
                 <div id="autoPaletteDiv">
@@ -83,6 +93,8 @@
         <div id="postQuantizeStage" class="element">
             <h3>Post-Quantize</h3>
             <div id="postQuantizeStageList">
+            </div>
+            <div id="postQuantizePresetStageList" class="preset">
             </div>
             <select id="postQuantizeStageSelect"></select>
         </div>
