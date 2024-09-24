@@ -252,6 +252,7 @@ function process() {
             canvasInput.height = imageInput.height
         }
         canvasContext.drawImage(imageInput, 0, 0, canvasInput.width, canvasInput.height)
+        previousQuants = []
     }
     for (let i = 0; i < preQuantizeStages.length; i++) {
         let stage = preQuantizeStages[i]
@@ -319,6 +320,9 @@ function process() {
     }
     document.body.style.cursor = "default"
 }
+
+// Nightmare from: https://stackoverflow.com/questions/23451726/saving-binary-data-as-file-using-javascript-from-a-browser
+let saveByteArray
 
 function loadPageElements() {
     // Input Stage
@@ -445,8 +449,30 @@ function loadPageElements() {
         postQuantizeStageSelect.value = ""
     })
 
+    saveByteArray = (function () {
+        let a = document.createElement("a")
+        document.body.appendChild(a)
+        a.style = "display: none"
+        return function (data, name) {
+            let blob = new Blob([data], {type: "application/octet-stream"}),
+                url = window.URL.createObjectURL(blob)
+            a.href = url
+            a.download = name
+            a.click()
+            window.URL.revokeObjectURL(url)
+        }
+    }())
+
     // Output Stage
     saveOutputButton = document.getElementById("saveOutputButton")
+    saveOutputButton.addEventListener("click", () => {
+        if (selectedPreset?.export) {
+            let fn = prompt("Filename?", "output" + selectedPreset.export.extension || "")
+            if (fn == null) return
+            saveByteArray(
+                Uint8Array.from(selectedPreset.export.func(previousQuants[previousQuants.length - 1])), fn)
+        }
+    })
 
     // Preview Stage
     imagePreviewCanvas = document.getElementById("imagePreviewCanvas")
