@@ -208,7 +208,7 @@ class LevelsFilter extends PreQuantizeFilter {
         input.disabled = locked
         input.min = 0
         input.max = 1
-        input.step = 0.05
+        input.step = 0.01
         input.value = 1
         input.addEventListener("change", (event) => {
             this.updated = true
@@ -264,7 +264,6 @@ class NoiseFilter extends PreQuantizeFilter {
         })
         this.div.appendChild(button)
         this.rgbInput = labeledCheckbox("RGB Noise", this.div)
-        this.rgbInput.disabled = true
         this.rgbInput.addEventListener("change", () => {
             this.updated = true
             onSettingChange()

@@ -16,8 +16,7 @@
         <div id="inputStage" class="element">
             <h3>Input</h3>
             <input id="fileInput" type="file">
-            <label for="presets">Preset</label>
-            <select id="presets">
+            <label>Preset<select id="presets">
                 <option>None</option>
                 <optgroup label="CGA">
                     <option>CGA 1b</option>
@@ -33,7 +32,7 @@
                     <option>CC BBF</option>
                     <option>CC NFP</option>
                 </optgroup>
-            </select>
+            </select></label>
             <button id="processButton">Process</button>
             <label><input type="checkbox" id="autoProcessCheckbox" checked="true">Auto Process</label>
             <br><br>
@@ -43,14 +42,17 @@
                     <option>Stretch</option>
                     <option>None</option>
                 </select>
-                <input type="number" min="1" value="640" id="imageWidthInput">
-                <input type="number" min="1" value="480" id="imageHeightInput">
-                <select id="imageScalePresets">
-                    <option></option>
-                    <option>640x480</option>
-                    <option>800x600</option>
-                    <option>1024x720</option>
-                </select>
+                <div id="scaleOptionsDiv">
+                    <input type="number" min="1" value="640" id="imageWidthInput">
+                    <input type="number" min="1" value="480" id="imageHeightInput">
+                    <select id="imageScalePresets">
+                        <option></option>
+                        <option>640x480</option>
+                        <option>800x600</option>
+                        <option>1024x720</option>
+                    </select>
+                    <label><input type="checkbox" id="smoothingCheckbox" checked="false">Smoothing</label>
+                </div>
             </div>
             <br>
             <img id="imageInput" hidden="true"/>
@@ -66,19 +68,18 @@
         </div>
         <div id="quantizeStage" class="element">
             <h3>Quantizer</h3>
-            <label for="ditherMode">Dither</label>
-            <select id="ditherMode">
-                <option>None</option>
-                <option>FloydSteinberg</option>
-                <option>FalseFloydSteinberg</option>
-                <option>Stucki</option>
-                <option>Atkinson</option>
-                <option>Jarvis</option>
-                <option>Burkes</option>
-                <option>Sierra</option>
-                <option>TwoSierra</option>
-                <option>SierraLite</option>
-            </select>
+            <label>Dither <select id="ditherMode">
+                    <option>None</option>
+                    <option>FloydSteinberg</option>
+                    <option>FalseFloydSteinberg</option>
+                    <option>Stucki</option>
+                    <option>Atkinson</option>
+                    <option>Jarvis</option>
+                    <option>Burkes</option>
+                    <option>Sierra</option>
+                    <option>TwoSierra</option>
+                    <option>SierraLite</option>
+                </select></label>
             <br>
             <br>
             <div class="element">

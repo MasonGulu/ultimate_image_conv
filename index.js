@@ -20,6 +20,10 @@ let imageWidthInput
 let imageHeightInput
 /** @type {HTMLSelectElement} */
 let imageScalePresets
+/** @type {HTMLInputElement} */
+let smoothingCheckbox
+/** @type {HTMLDivElement} */
+let scaleOptionsDiv
 
 // Pre-quantize Stage
 /** @type {HTMLDivElement} */
@@ -251,6 +255,7 @@ function process() {
             canvasInput.width = imageInput.width
             canvasInput.height = imageInput.height
         }
+        canvasContext.imageSmoothingEnabled = smoothingCheckbox.checked
         canvasContext.drawImage(imageInput, 0, 0, canvasInput.width, canvasInput.height)
         previousQuants = []
     }
@@ -336,11 +341,12 @@ function loadPageElements() {
     imageWidthInput = document.getElementById("imageWidthInput")
     imageHeightInput = document.getElementById("imageHeightInput")
     imageScalePresets = document.getElementById("imageScalePresets")
+    smoothingCheckbox = document.getElementById("smoothingCheckbox")
+    scaleOptionsDiv = document.getElementById("scaleOptionsDiv")
 
     imageScaleMode.addEventListener("change", (event) => {
         let hideInputs = event.target.value == "None"
-        imageWidthInput.hidden = hideInputs
-        imageHeightInput.hidden = hideInputs
+        scaleOptionsDiv.hidden = hideInputs
         fullUpdate = true
         onSettingChange()
     })
@@ -378,6 +384,10 @@ function loadPageElements() {
         imageWidthInput.value = width
         imageHeightInput.value = height
         imageScalePresets.value = ""
+        fullUpdate = true
+        onSettingChange()
+    })
+    smoothingCheckbox.addEventListener("change", () => {
         fullUpdate = true
         onSettingChange()
     })

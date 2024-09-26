@@ -209,6 +209,20 @@ presets["CGA 2b5H"] = {
 
 // ComputerCraft Modes
 let CCPalette = [[240, 240, 240],[242, 178, 51],[229, 127, 216],[153, 178, 242],[222, 222, 108],[127, 204, 25],[242, 178, 204],[76, 76, 76],[153, 153, 153],[76, 153, 178],[178, 102, 229],[51, 102, 204],[127, 102, 76],[87, 166, 78],[204, 76, 76],[17, 17, 17]]
+/**
+ * 
+ * @param {QuantizedImage} quant 
+ * @param {number} x 
+ * @param {number} y
+ * @returns {[number, number, number]} 
+ */
+function getBlitCharacter(quant, x, y) {
+    let fg = 0
+    let bg = 0
+    let char = 0
+
+    return [fg, bg, char]
+}
 presets["CC BIMG"] = {
         "scale": {
             "mode": "Scale To Fit",
@@ -253,6 +267,20 @@ presets["CC NFP"] = {
     "postQuantize": [],
     "preview": (quant) => {
         return scaleForPreview(quant, 2, 3)
+    },
+    "export": {
+        "extension": ".nfp",
+        "func": (quant) => {
+            let data = []
+            for (let y = 0; y < quant.height; y++) {
+                for (let x = 0; x < quant.width; x++) {
+                    let index = y * quant.width + x
+                    data.push(quant.data[index].toString(16).charCodeAt(0))
+                }
+                data.push("\n".charCodeAt(0))
+            }
+            return data
+        }
     }
 }
 
